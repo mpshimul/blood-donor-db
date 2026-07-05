@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --radius: 0.625rem;
+  --color-primary: #DC2626;
+  --color-primary-foreground: #FFFFFF;
+  --color-destructive: #DC2626;
+  --color-border: #E7E5E4;
+  --color-input: #E7E5E4;
+  --color-ring: #DC2626;
+}
+
+:root {
+  --background: #FFFBFB;
+  --foreground: #1C1917;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
