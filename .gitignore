@@ -5,3 +5,4 @@ prisma/db/
 *.png
 tool-results/
 mini-services/
+package-lock.json
