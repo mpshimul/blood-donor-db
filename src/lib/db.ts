@@ -13,7 +13,6 @@ function createPrismaClient(): PrismaClient {
     const adapter = new PrismaLibSql(libsql);
     return new PrismaClient({ adapter });
   }
-
   return new PrismaClient();
 }
 
