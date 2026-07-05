@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("libsql://blood-donor-db-mpshimul.aws-ap-south-1.turso.io")
+  url      = env("DATABASE_URL")
 }
 
 model Donor {
