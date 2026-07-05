@@ -1,21 +1,19 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaLibSQL } from '@prisma/adapter-libsql';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
 import { createClient } from '@libsql/client';
 
 const dbUrl = process.env.DATABASE_URL || 'file:./db/custom.db';
 
 function createPrismaClient(): PrismaClient {
   if (dbUrl.startsWith('libsql://')) {
-    // Turso cloud database — use libsql adapter
     const libsql = createClient({
       url: dbUrl,
       authToken: process.env.DATABASE_AUTH_TOKEN,
     });
-    const adapter = new PrismaLibSQL(libsql);
+    const adapter = new PrismaLibSql(libsql);
     return new PrismaClient({ adapter });
   }
 
-  // Local SQLite
   return new PrismaClient();
 }
 
