@@ -10,7 +10,7 @@ function createPrismaClient(): PrismaClient {
       url: dbUrl,
       authToken: process.env.DATABASE_AUTH_TOKEN,
     });
-    const adapter = new PrismaLibSql(libsql);
+    const adapter = new PrismaLibSQL(libsql);
     return new PrismaClient({ adapter });
   }
   return new PrismaClient();
