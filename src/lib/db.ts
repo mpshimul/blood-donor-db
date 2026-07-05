@@ -1,7 +1,24 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaLibSQL } from '@prisma/adapter-libsql';
+import { createClient } from '@libsql/client';
+
+const dbUrl = process.env.DATABASE_URL || 'file:./db/custom.db';
+
+function createPrismaClient(): PrismaClient {
+  if (dbUrl.startsWith('libsql://')) {
+    // Turso cloud database — use libsql adapter
+    const libsql = createClient({
+      url: dbUrl,
+      authToken: process.env.DATABASE_AUTH_TOKEN,
+    });
+    const adapter = new PrismaLibSQL(libsql);
+    return new PrismaClient({ adapter });
+  }
+
+  // Local SQLite
+  return new PrismaClient();
+}
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const db = globalForPrisma.prisma || new PrismaClient();
-
+export const db = globalForPrisma.prisma || createPrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
