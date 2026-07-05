@@ -413,7 +413,7 @@ export default function BloodDonorApp() {
                 ))}
               </div>
               <div className="relative max-w-md mx-auto">
-                <input type="text" placeholder="নাম, এলাকা বা শহর দিয়ে খুঁজুন..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 pr-10 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 transition" />
+                <input type="text" placeholder="নাম, এলাকা বা শহর দিয়ে খুঁজুন..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 pr-10 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/10 transition" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
               </div>
             </div>
@@ -487,12 +487,12 @@ export default function BloodDonorApp() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 animate-[fadeUp_0.4s_ease-out_both]">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📧 ইমেইল</label>
-                  <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="example@gmail.com" />
+                  <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="example@gmail.com" />
                   <p className="text-xs text-gray-400 mt-1">আপনার ইমেইলে একটি ভেরিফিকেশন কোড পাঠানো হবে</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🔒 পাসওয়ার্ড</label>
-                  <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="কমপক্ষে ৬ অক্ষর" />
+                  <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="কমপক্ষে ৬ অক্ষর" />
                 </div>
                 <button onClick={startRegistration} disabled={loading} className="w-full py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 disabled:opacity-60 transition">
                   {loading ? 'প্রক্রিয়া চলছে...' : 'এগিয়ে যান'}
@@ -509,7 +509,7 @@ export default function BloodDonorApp() {
                 <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs p-3 rounded-lg mb-3">
                   ⚠️ <strong>ডেমো মোড:</strong> ফায়ারবেস কনফিগার করলে ইমেইলে কোড যাবে। ডেমোতে কোড: <strong>{demoOtp}</strong>
                 </div>
-                <input type="text" value={regOtpInput} onChange={e => setRegOtpInput(e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-center text-2xl tracking-[0.5em] mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="• • • • • •" maxLength={6} />
+                <input type="text" value={regOtpInput} onChange={e => setRegOtpInput(e.target.value.replace(/[^0-9]/g, ''))} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-center text-2xl tracking-[0.5em] mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="• • • • • •" maxLength={6} />
                 <div className="flex gap-3">
                   <button onClick={() => setRegStep(1)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">বাতিল</button>
                   <button onClick={verifyDemoOTP} disabled={loading} className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 disabled:opacity-60 transition">{loading ? 'যাচাই হচ্ছে...' : 'যাচাই করুন'}</button>
@@ -522,11 +522,11 @@ export default function BloodDonorApp() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 animate-[fadeUp_0.4s_ease-out_both]">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">👤 আপনার নাম</label>
-                  <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পূর্ণ নাম" />
+                  <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পূর্ণ নাম" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📱 মোবাইল নম্বর</label>
-                  <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="০১XXXXXXXXX" maxLength={11} />
+                  <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="০১XXXXXXXXX" maxLength={11} />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🩸 রক্তের গ্রুপ</label>
@@ -539,11 +539,11 @@ export default function BloodDonorApp() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📍 এলাকা</label>
-                    <input type="text" value={regArea} onChange={e => setRegArea(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ধানমন্ডি" />
+                    <input type="text" value={regArea} onChange={e => setRegArea(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ধানমন্ডি" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🏙️ শহর</label>
-                    <input type="text" value={regCity} onChange={e => setRegCity(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ঢাকা" />
+                    <input type="text" value={regCity} onChange={e => setRegCity(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ঢাকা" />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
@@ -566,11 +566,11 @@ export default function BloodDonorApp() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📧 ইমেইল</label>
-                <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="example@gmail.com" />
+                <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="example@gmail.com" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🔒 পাসওয়ার্ড</label>
-                <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && loginUser()} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
+                <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && loginUser()} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
               </div>
               <button onClick={loginUser} disabled={loading} className="w-full py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 disabled:opacity-60 transition">
                 {loading ? 'প্রবেশ করা হচ্ছে...' : 'প্রবেশ'}
@@ -698,7 +698,7 @@ export default function BloodDonorApp() {
               <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">একাউন্ট মুছে ফেলুন?</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">আপনার একাউন্ট স্থায়ীভাবে মুছে যাবে।</p>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">পাসওয়ার্ড দিয়ে নিশ্চিত করুন:</p>
-              <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
+              <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
               <div className="flex gap-3">
                 <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm">বাতিল</button>
                 <button onClick={confirmDelete} disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-60">{loading ? 'মুছা হচ্ছে...' : 'মুছে ফেলুন'}</button>
@@ -719,23 +719,23 @@ export default function BloodDonorApp() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">👤 নাম</label>
-                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পূর্ণ নাম" />
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পূর্ণ নাম" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📱 মোবাইল নম্বর</label>
-                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="০১XXXXXXXXX" maxLength={11} />
+                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="০১XXXXXXXXX" maxLength={11} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📍 এলাকা</label>
-                <input type="text" value={editArea} onChange={e => setEditArea(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ধানমন্ডি" />
+                <input type="text" value={editArea} onChange={e => setEditArea(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ধানমন্ডি" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🏙️ শহর</label>
-                <input type="text" value={editCity} onChange={e => setEditCity(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ঢাকা" />
+                <input type="text" value={editCity} onChange={e => setEditCity(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ঢাকা" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📅 সর্বশেষ রক্তদানের তারিখ</label>
-                <input type="date" value={editLastDonated} onChange={e => setEditLastDonated(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border-1.5 border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" />
+                <input type="date" value={editLastDonated} onChange={e => setEditLastDonated(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" />
                 <p className="text-xs text-gray-400 mt-1">খালি রাখলে &quot;কখনো না&quot; থাকবে</p>
               </div>
               <div className="flex gap-3 pt-2">
@@ -746,22 +746,6 @@ export default function BloodDonorApp() {
           </div>
         </div>
       )}
-
-      {/* ─── Inline keyframes ─── */}
-      <style jsx>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-          50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-        }
-      `}</style>
     </>
   );
 }
