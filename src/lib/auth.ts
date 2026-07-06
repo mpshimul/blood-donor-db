@@ -15,9 +15,37 @@ export function calcAvailability(lastDonated: Date | null) {
   return { available: false, daysLeft: diffDays, nextAvailableDate: nextAvailable.toISOString() };
 }
 
-export function donorPublic(d: { id: string; name: string; email: string; bloodGroup: string; phone: string; area: string; city: string; role: string; lastDonated: Date | null }) {
+export function donorPublic(d: {
+  id: string; name: string; email: string; bloodGroup: string;
+  phone: string; area: string; city: string; role: string;
+  lastDonated: Date | null;
+  facebookUrl?: string | null;
+  phoneHidden?: boolean;
+}) {
   const a = calcAvailability(d.lastDonated);
-  return { id: d.id, name: d.name, bloodGroup: d.bloodGroup, phone: d.phone, area: d.area, city: d.city, role: d.role, available: a.available, daysLeft: a.daysLeft, nextAvailableDate: a.nextAvailableDate, lastDonated: d.lastDonated };
+  return {
+    id: d.id, name: d.name, bloodGroup: d.bloodGroup,
+    phone: d.phone, area: d.area, city: d.city, role: d.role,
+    available: a.available, daysLeft: a.daysLeft,
+    nextAvailableDate: a.nextAvailableDate, lastDonated: d.lastDonated,
+    facebookUrl: d.facebookUrl || null,
+    phoneHidden: d.phoneHidden || false,
+  };
+}
+
+/** Returns donor data for public listing — hides phone when phoneHidden is true */
+export function donorPublicList(d: {
+  id: string; name: string; email: string; bloodGroup: string;
+  phone: string; area: string; city: string; role: string;
+  lastDonated: Date | null;
+  facebookUrl?: string | null;
+  phoneHidden?: boolean;
+}) {
+  const base = donorPublic(d);
+  return {
+    ...base,
+    phone: base.phoneHidden ? '' : base.phone,
+  };
 }
 
 export function generateToken(): string {
@@ -42,10 +70,15 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-// In-memory OTP store (for demo mode)
+// In-memory OTP store (fallback when Firebase is not configured)
 export const otpStore = new Map<string, { code: string; expiresAt: number; verified: boolean }>();
 export const OTP_EXPIRY_MS = 5 * 60 * 1000;
 
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/** Check if Firebase is configured */
+export function isFirebaseConfigured(): boolean {
+  return !!(process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 }

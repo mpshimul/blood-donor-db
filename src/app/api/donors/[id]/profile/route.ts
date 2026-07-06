@@ -30,6 +30,9 @@ export async function PATCH(
     if (body.lastDonated !== undefined) {
       updateData.lastDonated = body.lastDonated ? new Date(body.lastDonated) : null;
     }
+    if (body.facebookUrl !== undefined) updateData.facebookUrl = body.facebookUrl || null;
+    if (body.phoneHidden !== undefined) updateData.phoneHidden = !!body.phoneHidden;
+
     const updated = await db.donor.update({ where: { id }, data: updateData });
     return NextResponse.json({ success: true, donor: donorPublic(updated) });
   } catch (err: unknown) {

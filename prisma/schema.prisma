@@ -8,20 +8,23 @@ datasource db {
 }
 
 model Donor {
-  id          String    @id @default(cuid())
-  name        String
-  email       String    @unique
-  bloodGroup  String
-  phone       String
-  password    String
-  area        String
-  city        String
-  lastDonated DateTime?
-  available   Boolean   @default(true)
-  role        String    @default("USER")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  sessions    Session[]
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  bloodGroup   String
+  phone        String
+  password     String    @default("")
+  area         String
+  city         String
+  lastDonated  DateTime?
+  available    Boolean   @default(true)
+  role         String    @default("USER")
+  facebookUrl  String?
+  phoneHidden  Boolean   @default(false)
+  firebaseUid  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
 }
 
 model Session {

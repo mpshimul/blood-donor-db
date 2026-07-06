@@ -17,10 +17,13 @@ interface DonorPublic {
   daysLeft: number | null;
   nextAvailableDate: string | null;
   lastDonated: string | null;
+  facebookUrl: string | null;
+  phoneHidden: boolean;
 }
 
 interface DonorMe extends DonorPublic {
   email: string;
+  firebaseUid?: string | null;
 }
 
 interface Stats {
@@ -29,7 +32,24 @@ interface Stats {
   cities: number;
 }
 
+interface FirebaseConfig {
+  firebaseEnabled: boolean;
+  hasApiKey: boolean;
+  hasAuthDomain: boolean;
+  hasProjectId: boolean;
+  hasAdminConfig: boolean;
+}
+
 type Page = 'home' | 'register' | 'login' | 'profile' | 'admin';
+
+// ─── Firebase dynamic import helpers ───
+let _firebaseAuth: typeof import('firebase/auth') | null = null;
+async function getFirebaseAuthModule() {
+  if (!_firebaseAuth) {
+    _firebaseAuth = await import('firebase/auth');
+  }
+  return _firebaseAuth;
+}
 
 // ─── Helpers ───
 function toBanglaNum(num: number | null | undefined): string {
@@ -50,6 +70,16 @@ function formatNextAvailable(dateStr: string | null): string {
   return `${toBanglaNum(d.getDate())}/${toBanglaNum(d.getMonth() + 1)}/${toBanglaNum(d.getFullYear())}`;
 }
 
+function normalizeFacebookUrl(url: string): string {
+  if (!url) return '';
+  // Remove trailing slashes, add https if missing
+  let normalized = url.trim().replace(/\/+$/, '');
+  if (!normalized.startsWith('http')) {
+    normalized = 'https://' + normalized;
+  }
+  return normalized;
+}
+
 // ─── Toast Component ───
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'info' | 'warn'; onClose: () => void }) {
   useEffect(() => {
@@ -68,6 +98,20 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
   );
 }
 
+// ─── Toggle Switch Component ───
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (val: boolean) => void; label: string }) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none">
+      <div className="relative" onClick={() => onChange(!checked)}>
+        <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`} />
+        </div>
+      </div>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+    </label>
+  );
+}
+
 // ─── Main App ───
 export default function BloodDonorApp() {
   const { theme, setTheme } = useTheme();
@@ -79,6 +123,8 @@ export default function BloodDonorApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warn' } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [firebaseConfig, setFirebaseConfig] = useState<FirebaseConfig | null>(null);
+  const [firebaseAppInitialized, setFirebaseAppInitialized] = useState(false);
 
   // Registration state
   const [regStep, setRegStep] = useState(1);
@@ -92,6 +138,8 @@ export default function BloodDonorApp() {
   const [regArea, setRegArea] = useState('');
   const [regCity, setRegCity] = useState('');
   const [regOtpInput, setRegOtpInput] = useState('');
+  const [regFacebookUrl, setRegFacebookUrl] = useState('');
+  const [regPhoneHidden, setRegPhoneHidden] = useState(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -104,6 +152,8 @@ export default function BloodDonorApp() {
   const [editArea, setEditArea] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editLastDonated, setEditLastDonated] = useState('');
+  const [editFacebookUrl, setEditFacebookUrl] = useState('');
+  const [editPhoneHidden, setEditPhoneHidden] = useState(false);
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -119,6 +169,36 @@ export default function BloodDonorApp() {
   }, []);
 
   const closeToast = useCallback(() => { setToast(null); }, []);
+
+  // ─── Firebase Init ───
+  const initFirebase = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/firebase-config');
+      const config: FirebaseConfig = await res.json();
+      setFirebaseConfig(config);
+
+      if (!config.firebaseEnabled || !config.hasApiKey) return;
+
+      // Dynamic import firebase
+      const firebaseModule = await import('firebase/app');
+      const { getApps, initializeApp } = firebaseModule;
+      if (getApps().length > 0) {
+        setFirebaseAppInitialized(true);
+        return;
+      }
+      initializeApp({
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
+      });
+      setFirebaseAppInitialized(true);
+    } catch {
+      // Firebase not available
+    }
+  }, []);
 
   // ─── Auth ───
   const checkAuth = useCallback(async () => {
@@ -144,10 +224,11 @@ export default function BloodDonorApp() {
 
   useEffect(() => {
     if (mounted) {
+      initFirebase();
       checkAuth();
       loadDonors();
     }
-  }, [mounted, checkAuth, loadDonors]);
+  }, [mounted, initFirebase, checkAuth, loadDonors]);
 
   // ─── Page Navigation ───
   const showPage = useCallback((page: Page) => {
@@ -163,6 +244,51 @@ export default function BloodDonorApp() {
     if (!regEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail)) {
       showToast('সঠিক ইমেইল দিন', 'error'); return;
     }
+
+    // Firebase path
+    if (firebaseConfig?.firebaseEnabled && firebaseAppInitialized) {
+      if (!regPassword || regPassword.length < 6) {
+        showToast('কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন', 'error'); return;
+      }
+      setLoading(true);
+      try {
+        const { getAuth, createUserWithEmailAndPassword } = await getFirebaseAuthModule();
+        const auth = getAuth();
+        const cred = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
+        const idToken = await cred.user.getIdToken();
+
+        // Check if email already registered
+        const checkRes = await fetch('/api/auth/send-otp', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: regEmail }),
+        });
+        const checkData = await checkRes.json();
+        if (checkRes.ok && !checkData.useFirebase) {
+          // Email already exists
+          showToast('এই ইমেইলে ইতিমধ্যে একাউন্ট আছে। দয়া করে লগইন করুন।', 'error');
+          // Delete the Firebase user we just created (cleanup)
+          try { await cred.user.delete(); } catch {}
+          return;
+        }
+
+        setRegStep(3);
+        showToast('ফায়ারবেসে একাউন্ট তৈরি হয়েছে!');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'সমস্যা হয়েছে';
+        if (msg.includes('email-already-in-use')) {
+          showToast('এই ইমেইলে ইতিমধ্যে ফায়ারবেস একাউন্ট আছে। লগইন করুন।', 'error');
+        } else if (msg.includes('weak-password')) {
+          showToast('পাসওয়ার্ড দুর্বল, কমপক্ষে ৬ অক্ষর দিন', 'error');
+        } else if (msg.includes('invalid-email')) {
+          showToast('সঠিক ইমেইল দিন', 'error');
+        } else {
+          showToast('ফায়ারবেস ত্রুটি: ' + msg, 'error');
+        }
+      } finally { setLoading(false); }
+      return;
+    }
+
+    // Fallback: OTP path
     if (!regPassword || regPassword.length < 6) {
       showToast('কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন', 'error'); return;
     }
@@ -174,6 +300,10 @@ export default function BloodDonorApp() {
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error, 'error'); return; }
+      if (data.useFirebase) {
+        showToast('ফায়ারবেস কনফিগার করা আছে, কিন্তু ক্লায়েন্ট লোড হয়নি। পৃষ্ঠা রিফ্রেশ করুন।', 'warn');
+        return;
+      }
       setDemoOtp(data.otp);
       setRegStep(2);
       showToast(data.message || 'ভেরিফিকেশন কোড তৈরি হয়েছে');
@@ -208,9 +338,30 @@ export default function BloodDonorApp() {
     if (!regCity) { showToast('শহর দিন', 'error'); return; }
     setLoading(true);
     try {
+      let body: Record<string, unknown> = {
+        email: regEmail, password: regPassword, name: regName,
+        phone: regPhone, bloodGroup: regBloodGroup, area: regArea, city: regCity,
+        facebookUrl: normalizeFacebookUrl(regFacebookUrl) || null,
+        phoneHidden: regPhoneHidden,
+      };
+
+      // If Firebase is active, get the ID token
+      if (firebaseConfig?.firebaseEnabled && firebaseAppInitialized) {
+        try {
+          const { getAuth } = await getFirebaseAuthModule();
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (user) {
+            const idToken = await user.getIdToken();
+            body.firebaseIdToken = idToken;
+            delete body.password; // No need to send password to our server
+          }
+        } catch {}
+      }
+
       const res = await fetch('/api/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: regEmail, password: regPassword, name: regName, phone: regPhone, bloodGroup: regBloodGroup, area: regArea, city: regCity }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error, 'error'); return; }
@@ -224,12 +375,47 @@ export default function BloodDonorApp() {
 
   function resetRegForm() {
     setRegEmail(''); setRegPassword(''); setRegOtpVerified(false); setRegStep(1);
-    setRegName(''); setRegPhone(''); setRegBloodGroup(''); setRegArea(''); setRegCity(''); setRegOtpInput('');
+    setRegName(''); setRegPhone(''); setRegBloodGroup(''); setRegArea(''); setRegCity('');
+    setRegOtpInput(''); setRegFacebookUrl(''); setRegPhoneHidden(false); setDemoOtp('');
   }
 
   // ─── Login ───
   async function loginUser() {
     if (!loginEmail || !loginPassword) { showToast('ইমেইল ও পাসওয়ার্ড দিন', 'error'); return; }
+
+    // Firebase path
+    if (firebaseConfig?.firebaseEnabled && firebaseAppInitialized) {
+      setLoading(true);
+      try {
+        const { getAuth, signInWithEmailAndPassword } = await getFirebaseAuthModule();
+        const auth = getAuth();
+        const cred = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+        const idToken = await cred.user.getIdToken();
+
+        const res = await fetch('/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: loginEmail, firebaseIdToken: idToken }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.error, 'error'); return; }
+        setCurrentUser(data.donor);
+        showToast('স্বাগতম, ' + data.donor.name + '!');
+        setLoginEmail(''); setLoginPassword('');
+        showPage('home');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'সমস্যা হয়েছে';
+        if (msg.includes('user-not-found') || msg.includes('invalid-credential')) {
+          showToast('ইমেইল বা পাসওয়ার্ড ভুল', 'error');
+        } else if (msg.includes('wrong-password') || msg.includes('invalid-email')) {
+          showToast('ইমেইল বা পাসওয়ার্ড ভুল', 'error');
+        } else {
+          showToast('ফায়ারবেস ত্রুটি: ' + msg, 'error');
+        }
+      } finally { setLoading(false); }
+      return;
+    }
+
+    // Fallback: email/password
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
@@ -240,6 +426,7 @@ export default function BloodDonorApp() {
       if (!res.ok) { showToast(data.error, 'error'); return; }
       setCurrentUser(data.donor);
       showToast('স্বাগতম, ' + data.donor.name + '!');
+      setLoginEmail(''); setLoginPassword('');
       showPage('home');
     } catch { showToast('সংযোগে সমস্যা', 'error'); }
     finally { setLoading(false); }
@@ -247,6 +434,13 @@ export default function BloodDonorApp() {
 
   // ─── Logout ───
   async function logout() {
+    // Sign out from Firebase if active
+    if (firebaseConfig?.firebaseEnabled && firebaseAppInitialized) {
+      try {
+        const { getAuth, signOut: firebaseSignOut } = await getFirebaseAuthModule();
+        await firebaseSignOut(getAuth());
+      } catch {}
+    }
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
     showToast('সফলভাবে বের হয়েছেন');
@@ -261,6 +455,8 @@ export default function BloodDonorApp() {
     setEditArea(currentUser.area || '');
     setEditCity(currentUser.city || '');
     setEditLastDonated(currentUser.lastDonated ? currentUser.lastDonated.split('T')[0] : '');
+    setEditFacebookUrl(currentUser.facebookUrl || '');
+    setEditPhoneHidden(currentUser.phoneHidden || false);
     setShowEditModal(true);
   }
 
@@ -272,7 +468,11 @@ export default function BloodDonorApp() {
     if (!editCity) { showToast('শহর দিন', 'error'); return; }
     setLoading(true);
     try {
-      const body: Record<string, string> = { name: editName, phone: editPhone, area: editArea, city: editCity };
+      const body: Record<string, string | boolean> = {
+        name: editName, phone: editPhone, area: editArea, city: editCity,
+        facebookUrl: normalizeFacebookUrl(editFacebookUrl) || '',
+        phoneHidden: editPhoneHidden,
+      };
       if (editLastDonated) body.lastDonated = editLastDonated;
       const res = await fetch(`/api/donors/${currentUser.id}/profile`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -298,12 +498,18 @@ export default function BloodDonorApp() {
   async function confirmDelete() {
     const targetId = deleteTargetId;
     if (!targetId) return;
-    if (!deletePassword) { showToast('পাসওয়ার্ড দিন', 'error'); return; }
+
+    // Check if user is Firebase-only (no password stored)
+    const isFirebaseUser = !!currentUser?.firebaseUid;
+    if (!isFirebaseUser && !deletePassword) {
+      showToast('পাসওয়ার্ড দিন', 'error'); return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/donors/${targetId}/delete`, {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: deletePassword }),
+        body: JSON.stringify({ password: deletePassword || '' }),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error, 'error'); return; }
@@ -339,6 +545,8 @@ export default function BloodDonorApp() {
     }
     return true;
   });
+
+  const useFirebase = firebaseConfig?.firebaseEnabled && firebaseAppInitialized;
 
   if (!mounted) {
     return (
@@ -443,7 +651,16 @@ export default function BloodDonorApp() {
                       </span>
                     </div>
                     <div className="space-y-1 text-sm text-gray-500 dark:text-gray-400">
-                      <p>📞 <a href={`tel:${d.phone}`} className="text-gray-700 dark:text-gray-200 hover:text-red-600 font-medium">{d.phone}</a></p>
+                      {/* Phone or Facebook contact */}
+                      {d.phoneHidden ? (
+                        d.facebookUrl ? (
+                          <p>📘 <a href={d.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium hover:underline">ফেসবুকে যোগাযোগ করুন</a> <span className="text-xs text-gray-400">(ফোন গোপন)</span></p>
+                        ) : (
+                          <p className="text-amber-600 dark:text-amber-400 text-xs font-medium">🔒 ফোন নম্বর গোপন রাখা হয়েছে</p>
+                        )
+                      ) : (
+                        <p>📞 <a href={`tel:${d.phone}`} className="text-gray-700 dark:text-gray-200 hover:text-red-600 font-medium">{d.phone}</a></p>
+                      )}
                       <p>📍 {d.area}, {d.city}</p>
                       <p>📅 সর্বশেষ দান: {formatDate(d.lastDonated)}</p>
                       {d.daysLeft && <p className="text-amber-600 dark:text-amber-400 font-medium">পরবর্তী দান যাবে: {formatNextAvailable(d.nextAvailableDate)}</p>}
@@ -467,28 +684,45 @@ export default function BloodDonorApp() {
             <div className="text-center mb-6 animate-[fadeUp_0.4s_ease-out_both]">
               <div className="text-4xl mb-2">🩸</div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">রক্তদাতা হিসেবে নিবন্ধন করুন</h2>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">মাত্র ৩টি ধাপে সম্পন্ন করুন</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                {useFirebase ? 'ফায়ারবেস দিয়ে নিবন্ধন করুন' : 'মাত্র ৩টি ধাপে সম্পন্ন করুন'}
+              </p>
             </div>
 
             {/* Step indicators */}
-            <div className="flex items-center justify-center gap-3 mb-6">
-              {[1, 2, 3].map(s => (
-                <div key={s} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${s < regStep ? 'bg-green-500 text-white' : s === regStep ? 'bg-red-500 text-white scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}`}>
-                    {s < regStep ? '✓' : toBanglaNum(s)}
+            {useFirebase ? (
+              <div className="flex items-center justify-center gap-3 mb-6">
+                {[1, 2].map(s => (
+                  <div key={s} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${s < regStep ? 'bg-green-500 text-white' : s === regStep ? 'bg-red-500 text-white scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}`}>
+                      {s < regStep ? '✓' : toBanglaNum(s)}
+                    </div>
+                    {s < 2 && <div className={`w-8 h-0.5 ${s < regStep ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-600'}`} />}
                   </div>
-                  {s < 3 && <div className={`w-8 h-0.5 ${s < regStep ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-600'}`} />}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3 mb-6">
+                {[1, 2, 3].map(s => (
+                  <div key={s} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${s < regStep ? 'bg-green-500 text-white' : s === regStep ? 'bg-red-500 text-white scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}`}>
+                      {s < regStep ? '✓' : toBanglaNum(s)}
+                    </div>
+                    {s < 3 && <div className={`w-8 h-0.5 ${s < regStep ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-600'}`} />}
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Step 1 */}
+            {/* Step 1: Email + Password */}
             {regStep === 1 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 animate-[fadeUp_0.4s_ease-out_both]">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📧 ইমেইল</label>
                   <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="example@gmail.com" />
-                  <p className="text-xs text-gray-400 mt-1">আপনার ইমেইলে একটি ভেরিফিকেশন কোড পাঠানো হবে</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {useFirebase ? 'ফায়ারবেস দিয়ে একাউন্ট তৈরি হবে' : 'আপনার ইমেইলে একটি ভেরিফিকেশন কোড পাঠানো হবে'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">🔒 পাসওয়ার্ড</label>
@@ -501,8 +735,8 @@ export default function BloodDonorApp() {
               </div>
             )}
 
-            {/* Step 2 */}
-            {regStep === 2 && (
+            {/* Step 2: OTP verification (only in demo/fallback mode) */}
+            {regStep === 2 && !useFirebase && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 animate-[fadeUp_0.4s_ease-out_both]">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">🔐 ভেরিফিকেশন কোড</label>
                 <p className="text-xs text-gray-400 mb-3">নিচের ৬ সংখ্যার কোডটি লিখুন</p>
@@ -517,7 +751,7 @@ export default function BloodDonorApp() {
               </div>
             )}
 
-            {/* Step 3 */}
+            {/* Step 3: Profile info (step 2 in Firebase mode, step 3 in OTP mode) */}
             {regStep === 3 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4 animate-[fadeUp_0.4s_ease-out_both]">
                 <div>
@@ -546,8 +780,28 @@ export default function BloodDonorApp() {
                     <input type="text" value={regCity} onChange={e => setRegCity(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="ঢাকা" />
                   </div>
                 </div>
+
+                {/* ── Facebook URL + Phone Hidden ── */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📘 ফেসবুক প্রোফাইল লিংক <span className="text-xs text-gray-400 font-normal">(ঐচ্ছিক)</span></label>
+                  <input type="url" value={regFacebookUrl} onChange={e => setRegFacebookUrl(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="https://facebook.com/your.profile" />
+                  <p className="text-xs text-gray-400 mt-1">ফোন গোপন করলে মানুষ ফেসবুকে যোগাযোগ করতে পারবে</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+                  <Toggle
+                    checked={regPhoneHidden}
+                    onChange={setRegPhoneHidden}
+                    label="🔒 ফোন নম্বর গোপন রাখুন"
+                  />
+                  {regPhoneHidden && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 ml-14">
+                      {regFacebookUrl ? 'ফেসবুক লিংক থাকায় মানুষ আপনার সাথে যোগাযোগ করতে পারবে' : 'ফেসবুক লিংক দিলে মানুষ যোগাযোগ করতে পারবে'}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setRegStep(2)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">পেছনে</button>
+                  <button onClick={() => setRegStep(useFirebase ? 1 : 2)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">পেছনে</button>
                   <button onClick={completeRegistration} disabled={loading} className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 disabled:opacity-60 transition animate-[pulse-glow_2s_ease-in-out_infinite]">{loading ? 'সম্পন্ন হচ্ছে...' : 'নিবন্ধন সম্পন্ন করুন'}</button>
                 </div>
               </div>
@@ -562,6 +816,9 @@ export default function BloodDonorApp() {
               <div className="text-4xl mb-2">🔐</div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">প্রবেশ করুন</h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">আপনার একাউন্টে প্রবেশ করুন</p>
+              {useFirebase && (
+                <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">🔥 ফায়ারবেস সক্রিয়</span>
+              )}
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
               <div>
@@ -593,6 +850,9 @@ export default function BloodDonorApp() {
                     <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-semibold ${currentUser.role === 'ADMIN' ? 'bg-amber-400 text-amber-900' : 'bg-white/20 text-white'}`}>
                       {currentUser.role === 'ADMIN' ? '🛡️ অ্যাডমিন' : '👤 সাধারণ ব্যবহারকারী'}
                     </span>
+                    {currentUser.firebaseUid && (
+                      <span className="inline-block mt-1 ml-2 px-2 py-0.5 rounded text-xs font-semibold bg-blue-400/30 text-blue-100">🔥 Firebase</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -600,15 +860,20 @@ export default function BloodDonorApp() {
                 <div className="grid grid-cols-2 gap-4">
                   {[
                     { label: '📧 ইমেইল', value: currentUser.email, full: true },
-                    { label: '📞 ফোন', value: currentUser.phone },
+                    { label: '📞 ফোন', value: currentUser.phone + (currentUser.phoneHidden ? ' (গোপন)' : '') },
                     { label: '🩸 রক্তের গ্রুপ', value: currentUser.bloodGroup, red: true },
                     { label: '📍 এলাকা', value: currentUser.area },
                     { label: '🏙️ শহর', value: currentUser.city },
                     { label: '📅 সর্বশেষ দান', value: formatDate(currentUser.lastDonated) },
+                    ...(currentUser.facebookUrl ? [{ label: '📘 ফেসবুক', value: currentUser.facebookUrl, full: true, link: true }] : []),
                   ].map((item, i) => (
-                    <div key={i} className={`bg-gray-50 dark:bg-gray-700 rounded-xl p-4 ${item.full ? 'col-span-2' : ''}`}>
+                    <div key={i} className={`bg-gray-50 dark:bg-gray-700 rounded-xl p-4 ${'full' in item && item.full ? 'col-span-2' : ''}`}>
                       <p className="text-xs text-gray-400 mb-1">{item.label}</p>
-                      <p className={`font-semibold text-sm ${item.red ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'} ${item.full ? 'break-all' : ''}`}>{item.value}</p>
+                      {'link' in item && item.link ? (
+                        <a href={item.value} target="_blank" rel="noopener noreferrer" className={`font-semibold text-sm text-blue-600 dark:text-blue-400 hover:underline break-all`}>{item.value}</a>
+                      ) : (
+                        <p className={`font-semibold text-sm ${'red' in item && item.red ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'} ${'full' in item && item.full ? 'break-all' : ''}`}>{item.value}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -664,9 +929,10 @@ export default function BloodDonorApp() {
                     <div>
                       <p className="font-semibold text-gray-800 dark:text-gray-100">
                         {d.name} {d.role === 'ADMIN' && <span className="text-xs text-amber-600 dark:text-amber-400">অ্যাডমিন</span>}
+                        {d.phoneHidden && <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">🔒</span>}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{d.bloodGroup} &bull; {d.area}, {d.city} &bull; {d.phone}</p>
-                      <p className="text-xs text-gray-400">{d.email || ''}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{d.bloodGroup} &bull; {d.area}, {d.city} &bull; {d.phoneHidden ? 'ফোন গোপন' : d.phone}</p>
+                      {d.facebookUrl && <p className="text-xs text-blue-500 dark:text-blue-400">📘 {d.facebookUrl}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -697,8 +963,14 @@ export default function BloodDonorApp() {
               <div className="text-4xl mb-3">⚠️</div>
               <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">একাউন্ট মুছে ফেলুন?</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">আপনার একাউন্ট স্থায়ীভাবে মুছে যাবে।</p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">পাসওয়ার্ড দিয়ে নিশ্চিত করুন:</p>
-              <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
+              {currentUser?.firebaseUid ? (
+                <p className="text-blue-600 dark:text-blue-400 text-sm mb-5">🔥 ফায়ারবেস একাউন্ট — পাসওয়ার্ডের প্রয়োজন নেই।</p>
+              ) : (
+                <>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">পাসওয়ার্ড দিয়ে নিশ্চিত করুন:</p>
+                  <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 mb-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="পাসওয়ার্ড" />
+                </>
+              )}
               <div className="flex gap-3">
                 <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm">বাতিল</button>
                 <button onClick={confirmDelete} disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-60">{loading ? 'মুছা হচ্ছে...' : 'মুছে ফেলুন'}</button>
@@ -738,6 +1010,27 @@ export default function BloodDonorApp() {
                 <input type="date" value={editLastDonated} onChange={e => setEditLastDonated(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" />
                 <p className="text-xs text-gray-400 mt-1">খালি রাখলে &quot;কখনো না&quot; থাকবে</p>
               </div>
+
+              {/* ── Facebook URL ── */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">📘 ফেসবুক প্রোফাইল লিংক</label>
+                <input type="url" value={editFacebookUrl} onChange={e => setEditFacebookUrl(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl py-2.5 px-4 text-gray-800 dark:text-gray-100 outline-none focus:border-red-500 transition" placeholder="https://facebook.com/your.profile" />
+              </div>
+
+              {/* ── Phone Hidden Toggle ── */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+                <Toggle
+                  checked={editPhoneHidden}
+                  onChange={setEditPhoneHidden}
+                  label="🔒 ফোন নম্বর গোপন রাখুন"
+                />
+                {editPhoneHidden && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 ml-14">
+                    {editFacebookUrl ? 'ফেসবুক লিংক থাকায় মানুষ আপনার সাথে যোগাযোগ করতে পারবে' : 'ফেসবুক লিংক দিলে মানুষ যোগাযোগ করতে পারবে'}
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowEditModal(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">বাতিল</button>
                 <button onClick={saveProfile} disabled={loading} className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 disabled:opacity-60 transition">{loading ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}</button>

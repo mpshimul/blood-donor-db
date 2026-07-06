@@ -20,6 +20,13 @@ export async function DELETE(
     if (auth.id !== id && auth.role !== 'ADMIN') {
       return NextResponse.json({ error: 'আপনার এই কাজ করার অনুমতি নেই' }, { status: 403 });
     }
+
+    // Firebase users (no password) can delete without password confirmation
+    if (donor.firebaseUid && !donor.password) {
+      await db.donor.delete({ where: { id } });
+      return NextResponse.json({ success: true });
+    }
+
     const { password } = await req.json();
     const valid = await verifyPassword(password, donor.password);
     if (!valid) {

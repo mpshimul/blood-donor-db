@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionDonor } from '@/lib/server-auth';
 import { calcAvailability } from '@/lib/auth';
@@ -27,6 +27,9 @@ export async function GET() {
       daysLeft: avail.daysLeft,
       nextAvailableDate: avail.nextAvailableDate,
       lastDonated: donor.lastDonated,
+      facebookUrl: donor.facebookUrl || null,
+      phoneHidden: donor.phoneHidden || false,
+      firebaseUid: donor.firebaseUid || null,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown';
