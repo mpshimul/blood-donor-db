@@ -99,10 +99,10 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 }
 
 // ─── Toggle Switch Component ───
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (val: boolean) => void; label: string }) {
+function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (val: boolean) => void; label: string; disabled?: boolean }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer select-none">
-      <div className="relative" onClick={() => onChange(!checked)}>
+    <label className={`flex items-center gap-3 cursor-pointer select-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+      <div className="relative" onClick={() => { if (!disabled) onChange(!checked); }}>
         <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
           <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`} />
         </div>
@@ -336,6 +336,7 @@ export default function BloodDonorApp() {
     if (!regBloodGroup) { showToast('রক্তের গ্রুপ নির্বাচন করুন', 'error'); return; }
     if (!regArea) { showToast('এলাকা দিন', 'error'); return; }
     if (!regCity) { showToast('শহর দিন', 'error'); return; }
+    if (regPhoneHidden && !normalizeFacebookUrl(regFacebookUrl)) { showToast('ফোন গোপন করতে হলে ফেসবুক প্রোফাইল লিংক দিতে হবে', 'error'); return; }
     setLoading(true);
     try {
       let body: Record<string, unknown> = {
@@ -466,6 +467,7 @@ export default function BloodDonorApp() {
     if (!editPhone || editPhone.length !== 11 || !editPhone.startsWith('01')) { showToast('সঠিক বাংলাদেশি ফোন নম্বর দিন', 'error'); return; }
     if (!editArea) { showToast('এলাকা দিন', 'error'); return; }
     if (!editCity) { showToast('শহর দিন', 'error'); return; }
+    if (editPhoneHidden && !normalizeFacebookUrl(editFacebookUrl)) { showToast('ফোন গোপন করতে হলে ফেসবুক প্রোফাইল লিংক দিতে হবে', 'error'); return; }
     setLoading(true);
     try {
       const body: Record<string, string | boolean> = {
@@ -656,7 +658,7 @@ export default function BloodDonorApp() {
                         d.facebookUrl ? (
                           <p>📘 <a href={d.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium hover:underline">ফেসবুকে যোগাযোগ করুন</a> <span className="text-xs text-gray-400">(ফোন গোপন)</span></p>
                         ) : (
-                          <p className="text-amber-600 dark:text-amber-400 text-xs font-medium">🔒 ফোন নম্বর গোপন রাখা হয়েছে</p>
+                          <p className="text-gray-400 text-xs">⚠️ যোগাযোগের তথ্য গোপন</p>
                         )
                       ) : (
                         <p>📞 <a href={`tel:${d.phone}`} className="text-gray-700 dark:text-gray-200 hover:text-red-600 font-medium">{d.phone}</a></p>
@@ -792,10 +794,16 @@ export default function BloodDonorApp() {
                     checked={regPhoneHidden}
                     onChange={setRegPhoneHidden}
                     label="🔒 ফোন নম্বর গোপন রাখুন"
+                    disabled={!normalizeFacebookUrl(regFacebookUrl)}
                   />
-                  {regPhoneHidden && (
+                  {!normalizeFacebookUrl(regFacebookUrl) && (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 ml-14">
-                      {regFacebookUrl ? 'ফেসবুক লিংক থাকায় মানুষ আপনার সাথে যোগাযোগ করতে পারবে' : 'ফেসবুক লিংক দিলে মানুষ যোগাযোগ করতে পারবে'}
+                      ⚠️ ফোন গোপন করতে হলে আগে উপরে ফেসবুক লিংক দিন
+                    </p>
+                  )}
+                  {regPhoneHidden && normalizeFacebookUrl(regFacebookUrl) && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2 ml-14">
+                      ✅ ফেসবুক লিংক দেওয়া আছে — মানুষ ফেসবুকে যোগাযোগ করতে পারবে
                     </p>
                   )}
                 </div>
@@ -1023,10 +1031,16 @@ export default function BloodDonorApp() {
                   checked={editPhoneHidden}
                   onChange={setEditPhoneHidden}
                   label="🔒 ফোন নম্বর গোপন রাখুন"
+                  disabled={!normalizeFacebookUrl(editFacebookUrl)}
                 />
-                {editPhoneHidden && (
+                {!normalizeFacebookUrl(editFacebookUrl) && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 ml-14">
-                    {editFacebookUrl ? 'ফেসবুক লিংক থাকায় মানুষ আপনার সাথে যোগাযোগ করতে পারবে' : 'ফেসবুক লিংক দিলে মানুষ যোগাযোগ করতে পারবে'}
+                    ⚠️ ফোন গোপন করতে হলে আগে ফেসবুক লিংক দিন
+                  </p>
+                )}
+                {editPhoneHidden && normalizeFacebookUrl(editFacebookUrl) && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2 ml-14">
+                    ✅ ফেসবুক লিংক দেওয়া আছে — মানুষ ফেসবুকে যোগাযোগ করতে পারবে
                   </p>
                 )}
               </div>

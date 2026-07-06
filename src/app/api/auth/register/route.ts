@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
       if (phone.length !== 11 || !phone.startsWith('01')) {
         return NextResponse.json({ error: 'সঠিক বাংলাদেশি ফোন নম্বর দিন' }, { status: 400 });
       }
+      if (phoneHidden && !facebookUrl) {
+        return NextResponse.json({ error: 'ফোন গোপন করতে হলে ফেসবুক প্রোফাইল লিংক দিতে হবে' }, { status: 400 });
+      }
 
       const existing = await db.donor.findUnique({ where: { email } });
       if (existing) {
@@ -68,6 +71,9 @@ export async function POST(req: NextRequest) {
     }
     if (password.length < 6) {
       return NextResponse.json({ error: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' }, { status: 400 });
+    }
+    if (phoneHidden && !facebookUrl) {
+      return NextResponse.json({ error: 'ফোন গোপন করতে হলে ফেসবুক প্রোফাইল লিংক দিতে হবে' }, { status: 400 });
     }
 
     const hashedPassword = await hashPassword(password);

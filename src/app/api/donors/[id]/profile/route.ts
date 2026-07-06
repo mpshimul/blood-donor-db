@@ -33,6 +33,16 @@ export async function PATCH(
     if (body.facebookUrl !== undefined) updateData.facebookUrl = body.facebookUrl || null;
     if (body.phoneHidden !== undefined) updateData.phoneHidden = !!body.phoneHidden;
 
+    // Enforce: phone hidden requires Facebook URL
+    if (updateData.phoneHidden) {
+      const finalFacebookUrl = updateData.facebookUrl !== undefined
+        ? updateData.facebookUrl
+        : (await db.donor.findUnique({ where: { id }, select: { facebookUrl: true } }))?.facebookUrl;
+      if (!finalFacebookUrl) {
+        return NextResponse.json({ error: 'ফোন গোপন করতে হলে ফেসবুক প্রোফাইল লিংক দিতে হবে' }, { status: 400 });
+      }
+    }
+
     const updated = await db.donor.update({ where: { id }, data: updateData });
     return NextResponse.json({ success: true, donor: donorPublic(updated) });
   } catch (err: unknown) {
